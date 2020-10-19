@@ -307,12 +307,22 @@ const main = () => {
     program
         .description("Converts Google Docs files to Latex")
         .option('-i, --input <file>', 'Input HTML file, downloaded from Google Docs', 'index.html')
+        .option('-o, --output <file>', 'Output TeX file', 'index.tex')
+        .option('-f, --force', 'Force overwrite output TeX file if it already exists', false)
         .option('-s, --template-start <file>', 'Starting template TeX source', 'template_start.tex')
         .option('-e, --template-end <file>', 'Ending template TeX source', 'template_end.tex')
         .parse(process.argv);
     
     if(!fs.existsSync(program.input)) {
         throw new Error('Input HTML not found at path ' + program.input);
+    }
+
+    if(!program.output.endsWith('.tex')) {
+        throw new Error('Output file should end with .tex but is ' + program.output)
+    }
+
+    if(!program.force && fs.existsSync(program.output)) {
+        throw new Error('Output already exists at path ' + program.input);
     }
 
     if(!fs.existsSync(program.templateStart)) {
@@ -333,13 +343,14 @@ const main = () => {
 
     const { title, subtitle, latex, bibtex } = handleElems(elems, getTextFormatSelectors(css));
     
-    fs.writeFileSync('index.tex',
+    fs.writeFileSync(program.output,
         generateLatexTitle({ title, subtitle })
         + fs.readFileSync(program.templateStart, { encoding: 'utf8' })
-        + '\\maketitle\n\n'
+        + '\n\n\\maketitle\n\n'
         + latex
+        + '\n\n\\bibliography{index}\n\n'
         + fs.readFileSync(program.templateEnd, { encoding: 'utf8' })
     );
-    fs.writeFileSync('index.bib', bibtex);
+    fs.writeFileSync(program.output.slice(0, -3) + 'bib', bibtex);
 }
 main();
