@@ -1,0 +1,14 @@
+{
+  "name": "gdoc2latex",
+  "version": "1.0.0",
+  "description": "Convert Google Docs files to Latex",
+  "main": "gdoc2latex.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Adam Jones (domdomegg)",
+  "dependencies": {
+    "he": "^1.2.0",
+    "himalaya": "^1.1.0"
+  }
+}
