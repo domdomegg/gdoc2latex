@@ -1,29 +1,69 @@
+#!/usr/bin/env node
+
 // Download the document as a webpage (File > Download > Web page), and save it as index.html
 
-const fs = require('fs');
-const himalaya = require('himalaya');
-const he = require('he');
+import fs from 'fs';
+import he from 'he';
+import { program } from 'commander';
+// @ts-ignore
+import * as himalaya from 'himalaya';
 
-const notNully = x => !!x;
+/**
+ * Array of CSS selectors that can select an element
+ * @example ['.aclass', '#some_id', 'h3'] 
+ */
+type Selectors = string[] 
+interface TextFormatSelectors {
+    bold: Selectors
+    italic: Selectors
+    underlined: Selectors
+}
+type AddBibliographyEntryFn = (entry: string) => void;
+type SetTitleFn = (type: 'title' | 'subtitle', value: string) => void;
 
+interface HimalayaAttribute {
+    key: string
+    value: string
+}
+type HimalayaNode = HimalayaElement | HimalayaText | HimalayaComment;
+interface HimalayaElement {
+    type: 'element'
+    tagName: string
+    children: HimalayaNode[]
+    attributes: HimalayaAttribute[]
+}
+interface HimalayaText {
+    type: 'text'
+    content: string
+}
+interface HimalayaComment {
+    type: 'comment'
+    content: string
+}
 
-const getTextSelectors = (css) => {
+const notNully = (x: any) => !!x;
+
+const getTextFormatSelectors = (css: string): TextFormatSelectors => {
     return {
-        bold: getSelectorsWith(css, 'font-weight:700'),
-        italic: getSelectorsWith(css, 'font-style:italic'),
-        underlined: getSelectorsWith(css, 'text-decoration:underline')
+        bold: getSelector(css, 'font-weight:700'),
+        italic: getSelector(css, 'font-style:italic'),
+        underlined: getSelector(css, 'text-decoration:underline')
     }
 }
 
-const getSelectorsWith = (css, selector) => 
+const getSelector = (css: string, selector: string): Selectors => 
     css.split(selector).slice(0, -1).map(fragment => {
         const newFragment = fragment.slice(0, fragment.lastIndexOf('{'));
         return newFragment.slice(newFragment.lastIndexOf('}')+1);
     });
 
-const mapToLatex = (textSelectors, addBibliographyEntry, setTitle) => (elem) => {
+const mapToLatex = (tfs: TextFormatSelectors, addBibliographyEntry: AddBibliographyEntryFn, setTitle: SetTitleFn) => (elem: HimalayaNode): string | undefined => {
     if (elem.type == 'text') {
         return transformText(elem.content);
+    }
+
+    if (elem.type == 'comment') {
+        return undefined;
     }
 
     if (elem.tagName == 'hr' && elem.attributes[0].key == 'style' && elem.attributes[0].value.includes('page-break-before:always')) {
@@ -35,8 +75,7 @@ const mapToLatex = (textSelectors, addBibliographyEntry, setTitle) => (elem) => 
     }
 
     if (elem.tagName == 'div') {
-        /** @type {string|undefined} */
-        const content = elem.children.map(mapToLatex(textSelectors, addBibliographyEntry, setTitle)).filter(notNully).join('\n\n');
+        const content: string | undefined = elem.children.map(mapToLatex(tfs, addBibliographyEntry, setTitle)).filter(notNully).join('\n\n');
 
         // See footnote content detection elsewhere
         // This is pretty disgusting, pls don't hate me
@@ -60,20 +99,20 @@ const mapToLatex = (textSelectors, addBibliographyEntry, setTitle) => (elem) => 
     }
 
     if (elem.tagName == 'ul') {
-        return '\\begin{itemize}\n' + elem.children.map(mapText(textSelectors)).filter(notNully).map(t => '  \\item ' + t).join('\n') + '\n\\end{itemize}';
+        return '\\begin{itemize}\n' + elem.children.map(mapText(tfs)).filter(notNully).map(t => '  \\item ' + t).join('\n') + '\n\\end{itemize}';
     }
 
     if (elem.tagName == 'ol') {
-        return '\\begin{enumerate}\n' + elem.children.map(mapText(textSelectors)).filter(notNully).map(t => '  \\item ' + t).join('\n') + '\n\\end{enumerate}';
+        return '\\begin{enumerate}\n' + elem.children.map(mapText(tfs)).filter(notNully).map(t => '  \\item ' + t).join('\n') + '\n\\end{enumerate}';
     }
 
     if (elem.tagName == 'table') {
-        const rows = elem.children[0].children;
+        const rows = (elem.children[0] as HimalayaElement).children as HimalayaElement[];
     
         let latex = '\\begin{center}\\begin{tabular}{ |' + 'l|'.repeat(rows[0].children.length) + ' }\n  \\hline\n';
     
         for (const row of rows) {
-            latex += '  ' + row.children.map(mapText(textSelectors)).join(' & ') + ' \\\\\n  \\hline\n';
+            latex += '  ' + row.children.map(mapText(tfs)).join(' & ') + ' \\\\\n  \\hline\n';
         }
     
         latex += '\\end{tabular}\\end{center}';
@@ -81,8 +120,8 @@ const mapToLatex = (textSelectors, addBibliographyEntry, setTitle) => (elem) => 
         return latex;
     }
 
-    const childrenText = elem.children.map(mapText(textSelectors)).filter(notNully).join('') || undefined;
-    if (!notNully(childrenText)) {
+    const childrenText = elem.children.map(mapText(tfs)).filter(notNully).join('') || undefined;
+    if (!childrenText) {
         return undefined;
     }
 
@@ -119,16 +158,20 @@ const mapToLatex = (textSelectors, addBibliographyEntry, setTitle) => (elem) => 
     throw new Error('Unsupported tag ' + elem.tagName);
 }
 
-const mapText = (textSelectors) => (elem) => {
+const mapText = (tfs: TextFormatSelectors) => (elem: HimalayaNode): string | undefined => {
     if (elem.type == 'text') {
         return transformText(elem.content);
+    }
+
+    if (elem.type == 'comment') {
+        return undefined;
     }
 
     if (!elem.children || elem.children.length == 0) {
         return undefined;
     }
 
-    const childrenText = elem.children.map(mapText(textSelectors)).filter(notNully).join('') || undefined;
+    const childrenText: string | undefined = elem.children.map(mapText(tfs)).filter(notNully).join('') || undefined;
     if (!notNully(childrenText)) {
         return undefined;
     }
@@ -150,16 +193,16 @@ const mapText = (textSelectors) => (elem) => {
         }
     }
 
-    if (elem.tagName == 'p' || elem.tagName == 'span' || elem.tagName == 'sup' || elem.tagName == 'sub' || elem.tagName == 'a' || elem.tagName == 'li' | elem.tagName == 'td') {
+    if (elem.tagName == 'p' || elem.tagName == 'span' || elem.tagName == 'sup' || elem.tagName == 'sub' || elem.tagName == 'a' || elem.tagName == 'li' || elem.tagName == 'td') {
         let s = childrenText;
 
-        if (selectorMatches(elem, textSelectors.bold)) {
+        if (selectorMatches(elem, tfs.bold)) {
             s = '\\textbf{' + s + '}';
         }
-        if (selectorMatches(elem, textSelectors.italic)) {
+        if (selectorMatches(elem, tfs.italic)) {
             s = '\\textit{' + s + '}';
         }
-        if (selectorMatches(elem, textSelectors.underlined)) {
+        if (selectorMatches(elem, tfs.underlined)) {
             s = '\\underline{' + s + '}';
         }
 
@@ -169,14 +212,16 @@ const mapText = (textSelectors) => (elem) => {
     throw new Error('Unsupported tag ' + elem.tagName);
 }
 
-const selectorMatches = (elem, selectors) => {    
+const selectorMatches = (elem: HimalayaElement, selectors: Selectors) => {    
     return selectors.some(s => {
+        // Selectors like '.aclass'
         if (s.startsWith('.')) {
             const c = s.slice(1);
             const value = (elem.attributes.find(attr => attr.key == 'class') || { value: '' }).value;
             return value == c || value.startsWith(c + ' ') || value.endsWith(' ' + c) || value.includes(' ' + c + ' ')
         }
 
+        // Selectors like 'h3'
         if (s.charAt(0) >= 'a' && s.charAt(0) <= 'z') {
             return s == elem.tagName;
         }
@@ -185,7 +230,7 @@ const selectorMatches = (elem, selectors) => {
     });
 }
 
-const transformText = (text) => he.decode(text)
+const transformText = (text: string): string => he.decode(text)
     .replace(/\u00A0/g, ' ')
     .replace(/\\/g, '\\textbackslash')
     .replace(/~/g, '\\textasciitilde')
@@ -199,12 +244,17 @@ const transformText = (text) => he.decode(text)
     .replace(/}/g, '\\}')
     .replace(/λ/g, '$\\lambda$');
 
-const handleElems = (elems, textSelectors) => {
+const handleElems = (elems: HimalayaElement[], textSelectors: TextFormatSelectors): {
+    title: string,
+    subtitle?: string,
+    latex: string,
+    bibtex: string
+} => {
     // Gross, should actually return these properly
     // This function should shield us higher up so we can refactor later
-    let bibtex = undefined;
+    let bibtex: string | undefined = undefined;
 
-    const addBibliographyEntry = (entry) => {
+    const addBibliographyEntry: AddBibliographyEntryFn = (entry) => {
         if (!bibtex) {
             bibtex = entry;
         } else {
@@ -213,25 +263,29 @@ const handleElems = (elems, textSelectors) => {
         }
     }
 
-    let title = undefined;
-    let subtitle = undefined;
-    const setTitle = (type, value) => {
+    let title: string | undefined = undefined;
+    let subtitle: string | undefined = undefined;
+    const setTitle: SetTitleFn = (type, value) => {
         if (type == 'title') {
             if (title) {
-                throw new Error('Duplicate titles defined', title, value);
+                throw new Error('Duplicate titles defined: ' + title + ' ' + value);
             }
             title = value;
         } else if (type == 'subtitle') {
             if (subtitle) {
-                throw new Error('Duplicate subtitles defined', subtitle, value);
+                throw new Error('Duplicate titles defined: ' + subtitle + ' ' + value);
             }
             subtitle = value;
         } else {
-            throw new Error('Invalid title type', type)
+            throw new Error('Invalid title type ' + type)
         }
     }
 
     const latex = elems.map(mapToLatex(textSelectors, addBibliographyEntry, setTitle)).filter(notNully).join('\n\n');
+
+    if (!title) throw new Error('Missing title')
+    if (!latex) throw new Error('Missing latex')
+    if (!bibtex) throw new Error('Missing bibtex')
 
     return {
         title,
@@ -241,11 +295,7 @@ const handleElems = (elems, textSelectors) => {
     }
 }
 
-const generateLatexTitle = ({ title, subtitle }) => {
-    if (!title) {
-        throw new Error('Missing title')
-    }
-
+const generateLatexTitle = ({ title, subtitle }: { title: string, subtitle?: string }) => {
     if (!subtitle) {
         return '\\title{\\textbf{' + title + '}}';
     }
@@ -254,22 +304,41 @@ const generateLatexTitle = ({ title, subtitle }) => {
 }
 
 const main = () => {
-    const html = fs.readFileSync('index.html', { encoding: 'utf8' });
-    const parsed = himalaya.parse(html);
+    program
+        .description("Converts Google Docs files to Latex")
+        .option('-i, --input <file>', 'Input HTML file, downloaded from Google Docs', 'index.html')
+        .option('-s, --template-start <file>', 'Starting template TeX source', 'template_start.tex')
+        .option('-e, --template-end <file>', 'Ending template TeX source', 'template_end.tex')
+        .parse(process.argv);
     
-    const css = parsed[0].children[0].children[1].children[0].content;
-    // TODO: a better name to describe this
-    const textSelectors = getTextSelectors(css);
-    const elems = parsed[0].children[1].children[0].children
+    if(!fs.existsSync(program.input)) {
+        throw new Error('Input HTML not found at path ' + program.input);
+    }
 
-    const { title, subtitle, latex, bibtex } = handleElems(elems, textSelectors);
+    if(!fs.existsSync(program.templateStart)) {
+        throw new Error('Start template not found at path ' + program.input);
+    }
+
+    if(!fs.existsSync(program.templateEnd)) {
+        throw new Error('End template not found at path ' + program.input);
+    }
+
+    const html: string = fs.readFileSync(program.input, { encoding: 'utf8' });
+    const parsed: HimalayaElement[] = himalaya.parse(html);
+    
+    // @ts-ignore
+    const css: string = parsed[0].children[0].children[1].children[0].content;
+    // @ts-ignore
+    const elems: HimalayaElement[] = parsed[0].children[1].children[0].children;
+
+    const { title, subtitle, latex, bibtex } = handleElems(elems, getTextFormatSelectors(css));
     
     fs.writeFileSync('index.tex',
         generateLatexTitle({ title, subtitle })
-        + fs.readFileSync('template_start.tex', { encoding: 'utf8' })
+        + fs.readFileSync(program.templateStart, { encoding: 'utf8' })
         + '\\maketitle\n\n'
         + latex
-        + fs.readFileSync('template_end.tex', { encoding: 'utf8' })
+        + fs.readFileSync(program.templateEnd, { encoding: 'utf8' })
     );
     fs.writeFileSync('index.bib', bibtex);
 }
