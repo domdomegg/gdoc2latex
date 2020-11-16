@@ -87,7 +87,7 @@ const mapToLatex = (tfs: TextFormatSelectors, addBibliographyEntry: AddBibliogra
                 .slice('REFERENCE<>'.length + key.length)
                 .replace(/\\{/g, '{')
                 .replace(/\\}/g, '}')
-                .replace(/@([a-zA-Z]+?)\s*{\s*[a-zA-Z0-9]+\s*,/, '@$1{' + key + ',')
+                .replace(/@([a-zA-Z]+?)\s*{\s*[^,]+\s*,/, '@$1{' + key + ',')
                 .replace(/(^[ \t]*\n)/gm, '')
                 .trim();
 
