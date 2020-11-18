@@ -1,0 +1,50 @@
+\title{%
+  \textbf{gdoc2latex}
+  \linebreak \linebreak
+  \large{Converts Google Docs files to LaTeX}
+}\documentclass[12pt]{article}
+\usepackage[a4paper,left=2.54cm,right=2.54cm,top=2.54cm,bottom=2.54cm]{geometry}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+
+\setlength\parindent{0em}
+\usepackage{parskip}
+\setcounter{tocdepth}{1}
+
+\usepackage{hyperref}
+
+\author{
+    Your Name \\
+    Department of Something \\
+    University of Somewhere
+}
+\date{}
+
+\begin{document}
+
+
+\maketitle
+
+\section{Usage}
+
+Here’s some content, originally written in Google Docs. This was then downloaded with File > Download > Web page (.html)
+
+\section{Supported features}
+
+Things like \textbf{bold} and \textit{italics} among other things are supported.
+
+Other features include:
+
+\begin{itemize}
+  \item Lists
+  \item \underline{Underline}
+  \item References (insert a footnote, and use BibTeX)\cite{ref1}
+\end{itemize}
+
+\bibliography{example}
+
+\bibliographystyle{abbrvurl}
+
+\end{document}

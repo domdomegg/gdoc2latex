@@ -1,10 +1,6 @@
-#!/usr/bin/env node
-
-// Download the document as a webpage (File > Download > Web page), and save it as index.html
-
 import fs from 'fs';
+import path from 'path';
 import he from 'he';
-import { program } from 'commander';
 // @ts-ignore
 import * as himalaya from 'himalaya';
 
@@ -303,37 +299,46 @@ const generateLatexTitle = ({ title, subtitle }: { title: string, subtitle?: str
     return '\\title{%\n  \\textbf{' + title + '}\n  \\linebreak \\linebreak\n  \\large{' + subtitle + '}\n}'
 }
 
-const main = () => {
-    program
-        .description("Converts Google Docs files to Latex")
-        .option('-i, --input <file>', 'Input HTML file, downloaded from Google Docs', 'index.html')
-        .option('-o, --output <file>', 'Output TeX file', 'index.tex')
-        .option('-f, --force', 'Force overwrite output TeX file if it already exists', false)
-        .option('-s, --template-start <file>', 'Starting template TeX source', 'template_start.tex')
-        .option('-e, --template-end <file>', 'Ending template TeX source', 'template_end.tex')
-        .parse(process.argv);
-    
-    if(!fs.existsSync(program.input)) {
-        throw new Error('Input HTML not found at path ' + program.input);
+const gdoc2latex = (options: { input: string, output: string, force: boolean, templateStart: string, templateEnd: string }) => {
+    if(!options.input.endsWith('.html')) {
+        throw new Error('Input file should start with .html but is ' + options.input)
     }
 
-    if(!program.output.endsWith('.tex')) {
-        throw new Error('Output file should end with .tex but is ' + program.output)
+    if (!fs.existsSync(options.input)) {
+        throw new Error('Input HTML not found at ' + options.input);
+    }
+    if (!fs.statSync(options.input).isFile()) {
+        throw new Error('Input HTML not a file at ' + options.input);
     }
 
-    if(!program.force && fs.existsSync(program.output)) {
-        throw new Error('Output already exists at path ' + program.input);
+    if(!options.output.endsWith('.tex')) {
+        throw new Error('Output file should end with .tex but is ' + options.output)
     }
 
-    if(!fs.existsSync(program.templateStart)) {
-        throw new Error('Start template not found at path ' + program.input);
+    if (!fs.existsSync(path.dirname(options.output))) {
+        if (options.force) {
+            fs.mkdirSync(path.dirname(options.output), { recursive: true })
+        } else {
+            throw new Error('Output directory not found at ' + path.dirname(options.output) + '. Use -f or --force to create.');
+        }
+    }
+    if (fs.existsSync(options.output) && fs.statSync(options.output).isDirectory()) {
+        throw new Error('Output is a directory at ' + options.output);
     }
 
-    if(!fs.existsSync(program.templateEnd)) {
-        throw new Error('End template not found at path ' + program.input);
+    if(!options.force && fs.existsSync(options.output)) {
+        throw new Error('Output file already exists at ' + options.output + '. Use -f or --force to overwrite.');
     }
 
-    const html: string = fs.readFileSync(program.input, { encoding: 'utf8' });
+    if (!fs.existsSync(options.templateStart)) {
+        throw new Error('Start template not found at ' + options.templateStart);
+    }
+
+    if(!fs.existsSync(options.templateEnd)) {
+        throw new Error('End template not found at ' + options.templateEnd);
+    }
+
+    const html: string = fs.readFileSync(options.input, { encoding: 'utf8' });
     const parsed: HimalayaElement[] = himalaya.parse(html);
     
     // @ts-ignore
@@ -343,14 +348,16 @@ const main = () => {
 
     const { title, subtitle, latex, bibtex } = handleElems(elems, getTextFormatSelectors(css));
     
-    fs.writeFileSync(program.output,
+    const combinedLatex = 
         generateLatexTitle({ title, subtitle })
-        + fs.readFileSync(program.templateStart, { encoding: 'utf8' })
+        + fs.readFileSync(options.templateStart, { encoding: 'utf8' })
         + '\n\n\\maketitle\n\n'
         + latex
-        + '\n\n\\bibliography{index}\n\n'
-        + fs.readFileSync(program.templateEnd, { encoding: 'utf8' })
-    );
-    fs.writeFileSync(program.output.slice(0, -3) + 'bib', bibtex);
+        + '\n\n\\bibliography{' + path.basename(options.output).slice(0, -4) + '}\n\n'
+        + fs.readFileSync(options.templateEnd, { encoding: 'utf8' });
+
+    fs.writeFileSync(options.output, combinedLatex);
+    fs.writeFileSync(options.output.slice(0, -4) + '.bib', bibtex);
 }
-main();
+
+export default gdoc2latex;
