@@ -61,6 +61,8 @@ Text styles:
 - Bold: Wraps in `\textbf`
 - Underline: Wraps in `\underline`
 - Italics: Wraps in `\textif`
+- Superscript: Wraps in `\textsuperscript`
+- Subscript: Wraps in `\textsubscript`
 - Tables: Creates centered table with borders
 - Unordered lists: Creates `itemize`
 - Ordered lists: Creates `enumerate`
@@ -71,14 +73,13 @@ Text styles:
 Not supported:
 
 - Images
-- Superscript
-- Subscript
 - URLs
 - Table styling
 - Emoji
 - All mathematical latex escape symbols
 - Footnotes (except for references)
 - Monospace font
+- Different font sizes (except for headers)
 
 (these aren't necessarily out of scope, but just haven't been implemented yet and I want to be clear about what this package can do)
 

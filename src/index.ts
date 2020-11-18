@@ -13,6 +13,8 @@ interface TextFormatSelectors {
     bold: Selectors
     italic: Selectors
     underlined: Selectors
+    superscript: Selectors
+    subscript: Selectors
 }
 type AddBibliographyEntryFn = (entry: string) => void;
 type SetTitleFn = (type: 'title' | 'subtitle', value: string) => void;
@@ -43,7 +45,9 @@ const getTextFormatSelectors = (css: string): TextFormatSelectors => {
     return {
         bold: getSelector(css, 'font-weight:700'),
         italic: getSelector(css, 'font-style:italic'),
-        underlined: getSelector(css, 'text-decoration:underline')
+        underlined: getSelector(css, 'text-decoration:underline'),
+        superscript: getSelector(css, 'vertical-align:super'),
+        subscript: getSelector(css, 'vertical-align:sub')
     }
 }
 
@@ -200,6 +204,12 @@ const mapText = (tfs: TextFormatSelectors) => (elem: HimalayaNode): string | und
         }
         if (selectorMatches(elem, tfs.underlined)) {
             s = '\\underline{' + s + '}';
+        }
+        if (selectorMatches(elem, tfs.superscript)) {
+            s = '\\textsuperscript{' + s + '}';
+        }
+        if (selectorMatches(elem, tfs.subscript)) {
+            s = '\\textsubscript{' + s + '}';
         }
 
         return s;        

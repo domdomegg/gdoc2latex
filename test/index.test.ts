@@ -3,7 +3,9 @@ import gdoc2latex from '../src/index'
 
 test('example document', () => {
     // Clean 'actual' directory by deleting it
-    fs.rmdirSync(__dirname + '/actual', { recursive: true });
+    if (fs.existsSync(__dirname + '/actual')) {
+        fs.rmdirSync(__dirname + '/actual', { recursive: true });
+    }
 
     // Run gdoc2latex
     gdoc2latex({
