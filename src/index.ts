@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import querystring from 'querystring';
 import he from 'he';
 // @ts-ignore
 import * as himalaya from 'himalaya';
@@ -66,6 +67,8 @@ const mapToLatex = (tfs: TextFormatSelectors, addBibliographyEntry: AddEntryFn, 
     if (elem.type == 'comment') {
         return undefined;
     }
+
+    const id = elem.attributes.find(attr => attr.key == 'id')
 
     if (elem.tagName == 'hr' && elem.attributes[0].key == 'style' && elem.attributes[0].value.includes('page-break-before:always')) {
         return '\\pagebreak';
@@ -148,19 +151,23 @@ const mapToLatex = (tfs: TextFormatSelectors, addBibliographyEntry: AddEntryFn, 
     }
 
     if (elem.tagName == 'h1') {
-        return '\\section{' + childrenText + '}';
+        if (id) return '\\section{' + childrenText + '}\\label{id:' + id.value + '}';
+        return '\\section{' + childrenText + '}'
     }
 
     if (elem.tagName == 'h2') {
-        return '\\subsection{' + childrenText + '}';
+        if (id) return '\\subsection{' + childrenText + '}\\label{id:' + id.value + '}';
+        return '\\subsection{' + childrenText + '}'
     }
-    
+
     if (elem.tagName == 'h3') {
-        return '\\subsubsection{' + childrenText + '}';
+        if (id) return '\\subsubsection{' + childrenText + '}\\label{id:' + id.value + '}';
+        return '\\subsubsection{' + childrenText + '}'
     }
 
     if (elem.tagName == 'h4') {
-        return '\\subsubsubsection{' + childrenText + '}';
+        if (id) return '\\subsubsubsection{' + childrenText + '}\\label{id:' + id.value + '}';
+        return '\\subsubsubsection{' + childrenText + '}'
     }
 
     if (elem.tagName == 'p') {
@@ -202,6 +209,25 @@ const mapText = (tfs: TextFormatSelectors) => (elem: HimalayaNode): string | und
             const key = href.value.slice('#ftnt_'.length);
             // Look it's been a long day... please don't hate me, future me.
             return 'FOOTNOTE<' + key + '>';
+        }
+
+        // URL
+        if (href) {
+            // Within document
+            if (href.value.startsWith('#')) {
+                return '\\hyperref[id:' + href.value.slice(1) + ']{' + childrenText  + '}'
+            }
+
+            // Attempt to remove Google redirects
+            if (href.value.startsWith('https://www.google.com/url?')) {
+                const q = querystring.parse(href.value.slice(href.value.indexOf('?') + 1), '&amp;').q;
+                if (typeof q == "string") {
+                    return '\\href{' + transformText(q) + '}{' + childrenText + '}'
+                }
+            }
+
+            // Other links
+            return '\\href{' + transformText(href.value) + '}{' + childrenText + '}'
         }
     }
 

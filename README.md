@@ -67,13 +67,14 @@ Supported:
 - Unordered lists: Creates `itemize`
 - Ordered lists: Creates `enumerate`
 - References (use BibTeX in footnotes): Creates `index.bib` and `\cite`s it
-- Footnotes
+- Footnotes: Inserts `\footnote`
 - Comments: Added at bottom of Latex document, indexed alphabetically
 - Pagebreaks: Inserts `\pagebreak`
+- Web and email links: Inserts `\href`
+- Internal links to sections: Inserts `\hyperref`
 
 Not supported:
 
-- URLs
 - Images
 - Monospace font
 - Headers and footers
