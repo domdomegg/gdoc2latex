@@ -25,11 +25,15 @@ try {
     // A bold red 'Error: '
     const errorPrefix = '\x1b[1;31mError:\x1b[0m ';
 
+    const helpHint = '\x1b[1mHint:\x1b[0m View help with --help'
+
     if (e instanceof Error) {
         console.error(errorPrefix + e.message);
+        console.error(helpHint);
         process.exit(1);
     } else {
         console.error(errorPrefix + e);
+        console.error(helpHint);
         process.exit(2);
     }
 }
