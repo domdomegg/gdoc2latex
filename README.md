@@ -50,7 +50,7 @@ This will result in a complete `index.pdf`
 
 ## Supported features
 
-Text styles:
+Supported:
 
 - Title: Sets the title (maximum 1)
 - Subtitle: Sets the subtitle (maximum 1)
@@ -66,22 +66,21 @@ Text styles:
 - Tables: Creates centered table with borders
 - Unordered lists: Creates `itemize`
 - Ordered lists: Creates `enumerate`
-- References (use BibTeX footnotes): Creates `index.bib` and `\cite`s it
+- References (use BibTeX in footnotes): Creates `index.bib` and `\cite`s it
+- Footnotes
 - Comments: Added at bottom of Latex document, indexed alphabetically
 - Pagebreaks: Inserts `\pagebreak`
 
 Not supported:
 
-- Images
 - URLs
-- Table styling
-- Emoji
-- All mathematical latex escape symbols
-- Footnotes (except for references)
+- Images
 - Monospace font
-- Different font sizes (except for headers)
+- Headers and footers
+- Custom table widths
+- Custom font sizing throughout document
 
-(these aren't necessarily out of scope, but just haven't been implemented yet and I want to be clear about what this package can do)
+(these aren't necessarily out of scope, but just haven't been implemented yet)
 
 ## Installing manually
 

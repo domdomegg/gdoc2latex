@@ -16,7 +16,8 @@ interface TextFormatSelectors {
     superscript: Selectors
     subscript: Selectors
 }
-type AddBibliographyEntryFn = (entry: string) => void;
+type AddEntryFn = (entry: string) => void;
+type AddKeyEntryFn = (key: string, entry: string) => void;
 type SetTitleFn = (type: 'title' | 'subtitle', value: string) => void;
 
 interface HimalayaAttribute {
@@ -57,7 +58,7 @@ const getSelector = (css: string, selector: string): Selectors =>
         return newFragment.slice(newFragment.lastIndexOf('}')+1);
     });
 
-const mapToLatex = (tfs: TextFormatSelectors, addBibliographyEntry: AddBibliographyEntryFn, setTitle: SetTitleFn) => (elem: HimalayaNode): string | undefined => {
+const mapToLatex = (tfs: TextFormatSelectors, addBibliographyEntry: AddEntryFn, addFootnoteEntry: AddKeyEntryFn, setTitle: SetTitleFn) => (elem: HimalayaNode): string | undefined => {
     if (elem.type == 'text') {
         return transformText(elem.content);
     }
@@ -75,23 +76,34 @@ const mapToLatex = (tfs: TextFormatSelectors, addBibliographyEntry: AddBibliogra
     }
 
     if (elem.tagName == 'div') {
-        const content: string | undefined = elem.children.map(mapToLatex(tfs, addBibliographyEntry, setTitle)).filter(notNully).join('\n\n');
+        const content: string | undefined = elem.children.map(mapToLatex(tfs, addBibliographyEntry, addFootnoteEntry, setTitle)).filter(notNully).join('\n\n');
 
         // See footnote content detection elsewhere
         // This is pretty disgusting, pls don't hate me
-        if (content && content.startsWith('REFERENCE<')) {
-            const key = content.slice('REFERENCE<'.length, content.indexOf('>'));
+        if (content && content.startsWith('FOOTNOTE<')) {
+            const key = content.slice('FOOTNOTE<'.length, content.indexOf('>'));
 
-            // Slice off reference marker, unescape braces, replace key, remove blank lines and trim whitespace
-            const bibtexContent = content
-                .slice('REFERENCE<>'.length + key.length)
-                .replace(/\\{/g, '{')
-                .replace(/\\}/g, '}')
-                .replace(/@([a-zA-Z]+?)\s*{\s*[^,]+\s*,/, '@$1{' + key + ',')
-                .replace(/(^[ \t]*\n)/gm, '')
+            // Slice off footnote marker
+            const footnoteContent = content
+                .slice('FOOTNOTE<>'.length + key.length)
                 .trim();
 
-            addBibliographyEntry(bibtexContent);
+            // BibTeX citation
+            if (footnoteContent.startsWith('@')) {
+                // Unescape braces, replace key, remove blank lines and trim whitespace
+                const bibtexContent = footnoteContent
+                    .replace(/\\{/g, '{')
+                    .replace(/\\}/g, '}')
+                    .replace(/@([a-zA-Z]+?)\s*{\s*[^,]+\s*,/, '@$1{' + key + ',')
+                    .replace(/(^[ \t]*\n)/gm, '')
+                    .trim();
+
+                addBibliographyEntry(bibtexContent);
+                return undefined;
+            }
+
+            // Other footnotes need to be backpatched
+            addFootnoteEntry(key, footnoteContent);
             return undefined;
         }
 
@@ -177,7 +189,7 @@ const mapText = (tfs: TextFormatSelectors) => (elem: HimalayaNode): string | und
     }
 
     if (elem.tagName == 'a') {
-        // In-text footnote reference 
+        // In-text footnote 
         const id = elem.attributes.find(attr => attr.key == 'id');
         if (id && id.value.startsWith('ftnt_')) {
             const key = id.value.slice('ftnt_'.length);
@@ -189,7 +201,7 @@ const mapText = (tfs: TextFormatSelectors) => (elem: HimalayaNode): string | und
         if (href && href.value.startsWith('#ftnt_')) {
             const key = href.value.slice('#ftnt_'.length);
             // Look it's been a long day... please don't hate me, future me.
-            return 'REFERENCE<' + key + '>';
+            return 'FOOTNOTE<' + key + '>';
         }
     }
 
@@ -260,13 +272,18 @@ const handleElems = (elems: HimalayaElement[], textSelectors: TextFormatSelector
     // This function should shield us higher up so we can refactor later
     let bibtex: string | undefined = undefined;
 
-    const addBibliographyEntry: AddBibliographyEntryFn = (entry) => {
+    const addBibliographyEntry: AddEntryFn = (entry) => {
         if (!bibtex) {
             bibtex = entry;
         } else {
             bibtex += '\n\n';
             bibtex += entry;
         }
+    }
+
+    const footnotes: { [refId: string]: string } = {};
+    const addFootnoteEntry: AddKeyEntryFn = (refId, footnoteContent) => {
+        footnotes[refId] = footnoteContent;
     }
 
     let title: string | undefined = undefined;
@@ -287,11 +304,15 @@ const handleElems = (elems: HimalayaElement[], textSelectors: TextFormatSelector
         }
     }
 
-    const latex = elems.map(mapToLatex(textSelectors, addBibliographyEntry, setTitle)).filter(notNully).join('\n\n');
+    let latex = elems.map(mapToLatex(textSelectors, addBibliographyEntry, addFootnoteEntry, setTitle)).filter(notNully).join('\n\n');
 
     if (!title) throw new Error('Missing title')
     if (!latex) throw new Error('Missing latex')
     if (!bibtex) throw new Error('Missing bibtex')
+
+    for (const refId in footnotes) {
+        latex = latex.replace('\\cite{' + refId + '}', '\\footnote{' + footnotes[refId] + '}')
+    }
 
     return {
         title,
