@@ -71,7 +71,8 @@ Supported:
 - References (use BibTeX in footnotes): Creates `index.bib` and `\cite`s it
 - Footnotes: Inserts `\footnote`
 - Comments: Added at bottom of Latex document, indexed alphabetically
-- Pagebreaks: Inserts `\pagebreak`
+- Line breaks: Inserts `\\`
+- Page breaks: Inserts `\pagebreak`
 - Web and email links: Inserts `\href`
 - Internal links to sections: Inserts `\hyperref`
 - Images: Inserts figure

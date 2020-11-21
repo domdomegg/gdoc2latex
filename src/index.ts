@@ -190,6 +190,10 @@ const mapText = (tfs: TextFormatSelectors) => (elem: HimalayaNode): string | und
         return undefined;
     }
 
+    if (elem.tagName == 'br') {
+        return '\\\\~';
+    }
+
     if (elem.tagName == 'img') {
         const src = elem.attributes.find(attr => attr.key == 'src')
 
