@@ -2,51 +2,19 @@
 
 Converts Google Docs files to LaTeX
 
-Install from NPM with `npm install --global gdoc2latex`
+## Install
 
-## Usage
+1. Install [Node.js](https://nodejs.org/en/)
+2. Install gdoc2latex with `npm i -g gdoc2latex`
 
-See help with `gdoc2latex --help`:
+## Use
 
-```
-$ gdoc2latex --help
-Usage: gdoc2latex [options]
+1. Download your Google Doc with `File > Download > Web page (.html)`
+2. Unzip the document, and run `gdoc2latex -i YourDocumentName.html`
+3. Compile the generated LaTeX and BibTeX sources
+4. ???
+5. Profit!
 
-Converts Google Docs files to LaTeX
-
-Options:
-  -i, --input <file>           Input HTML file, downloaded from Google Docs (default: "index.html")
-  -o, --output <file>          Output TeX file (default: "index.tex")
-  -f, --force                  Overwrite output TeX file if it already exists and create output directory if necessary (default: false)
-  -s, --template-start <file>  Custom starting template TeX source
-  -e, --template-end <file>    Custom ending template TeX source
-  -h, --help                   display help for command
-```
-
-For example:
-
-```
-gdoc2latex --input doc.html --output doc.tex --force --template-start mystart.tex --template-end myend.tex
-```
-
-The input HTML file should be downloaded from Google Docs with `File > Download > Web page (.html)`
-
-The template start should set up and open a LaTeX document and the end should close a LaTeX document. See the `default_templates` folder for examples.
-
-## Output
-
-gdoc2latex will output two files: a `.tex` and `.bib`
-
-Assuming `index.tex` and `index.bib`, compile with:
-
-```
-pdflatex index
-bibtex index
-pdflatex index
-pdflatex index
-```
-
-This will result in a complete `index.pdf`
 
 ## Supported features
 
@@ -92,9 +60,54 @@ Not supported:
 
 (these aren't necessarily out of scope, but just haven't been implemented yet)
 
-## Installing manually
+## Detailed usage
 
-1. Clone this repository
-2. Run `npm install`
-3. Run `npm run build`
-4. Run `npm install -g`
+See help with `gdoc2latex --help`:
+
+```
+$ gdoc2latex --help
+Usage: gdoc2latex [options]
+
+Converts Google Docs files to LaTeX
+
+Options:
+  -i, --input <file>           Input HTML file, downloaded from Google Docs (default: "index.html")
+  -o, --output <file>          Output TeX file (default: "index.tex")
+  -f, --force                  Overwrite output TeX file if it already exists and create output directory if necessary (default: false)
+  -s, --template-start <file>  Custom starting template TeX source
+  -e, --template-end <file>    Custom ending template TeX source
+  -h, --help                   display help for command
+```
+
+For example:
+
+```
+gdoc2latex --input doc.html --output doc.tex --force --template-start mystart.tex --template-end myend.tex
+```
+
+The input HTML file should be downloaded from Google Docs with `File > Download > Web page (.html)`
+
+The template start should set up and open a LaTeX document and the end should close a LaTeX document. See the `default_templates` folder for examples.
+
+### Output
+
+gdoc2latex will output two files: a `.tex` and `.bib`
+
+With pdflatex and bibtex, `index.tex` and `index.bib` can be compiled with:
+
+```
+pdflatex index
+bibtex index
+pdflatex index
+pdflatex index
+```
+
+This will result in a complete `index.pdf`
+
+### Installing manually
+
+1. Install [Node.js](https://nodejs.org/en/)
+2. Clone this repository
+3. Run `npm install`
+4. Run `npm run build`
+5. Run `npm install -g`
