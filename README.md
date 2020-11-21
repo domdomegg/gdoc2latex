@@ -49,12 +49,13 @@ Supported:
 - Chart captions (use alt text): Inserts `\caption`
 - Drawings (linked and unlinked): Inserts figure
 - Drawing captions (use alt text): Inserts `\caption`
+- Custom image, chart and drawing widths
 
 Not supported:
 
 - Custom fonts
 - Headers and footers
-- Custom table, image, chart and drawing widths
+- Custom table widths
 - Custom table, image, chart and drawing alignment
 - Custom font sizing
 

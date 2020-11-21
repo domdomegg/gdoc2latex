@@ -203,8 +203,16 @@ const mapText = (tfs: TextFormatSelectors) => (elem: HimalayaNode): string | und
 
         let latex = '\\begin{figure}[h!]\n  \\centering\n';
 
-        // TODO: custom image widths
-        const lineWidths = 0.5;
+        let lineWidths = '1';
+        const style = elem.attributes.find(attr => attr.key == 'style')
+        if (style) {
+            let widthText = style.value.slice(style.value.indexOf('width:'));
+            widthText = widthText.slice(6, widthText.indexOf(';')).trim();
+            const widthMatch = widthText.match(/^(\d+\.?\d*)px$/);
+            if (widthMatch) {
+                lineWidths = (parseFloat(widthMatch[1]) / 588).toFixed(3);
+            }
+        }
 
         latex += '  \\includegraphics[width=' + lineWidths + '\\linewidth]{' + src.value + '}\n'
         
