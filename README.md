@@ -63,6 +63,8 @@ Supported:
 - Italics: Wraps in `\textif`
 - Superscript: Wraps in `\textsuperscript`
 - Subscript: Wraps in `\textsubscript`
+- Center algined text: Wraps in `\centering`
+- Right algined text: Wraps in `\raggedleft`
 - Tables: Creates centered table with borders
 - Unordered lists: Creates `itemize`
 - Ordered lists: Creates `enumerate`
@@ -72,14 +74,20 @@ Supported:
 - Pagebreaks: Inserts `\pagebreak`
 - Web and email links: Inserts `\href`
 - Internal links to sections: Inserts `\hyperref`
+- Images: Inserts figure
+- Image captions (use alt text): Inserts `\caption`
+- Charts (linked and unlinked): Inserts figure
+- Chart captions (use alt text): Inserts `\caption`
+- Drawings (linked and unlinked): Inserts figure
+- Drawing captions (use alt text): Inserts `\caption`
 
 Not supported:
 
-- Images
-- Monospace font
+- Custom fonts
 - Headers and footers
-- Custom table widths
-- Custom font sizing throughout document
+- Custom table, image, chart and drawing widths
+- Custom table, image, chart and drawing alignment
+- Custom font sizing
 
 (these aren't necessarily out of scope, but just haven't been implemented yet)
 

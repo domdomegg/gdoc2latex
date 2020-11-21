@@ -14,6 +14,7 @@
 \setcounter{tocdepth}{1}
 
 \usepackage{hyperref}
+\usepackage{graphicx}
 
 \author{
     Your Name \\
@@ -31,6 +32,12 @@
 
 Here’s some content, originally written in Google Docs. It demonstrates using some of the features of gdoc2latex. It was downloaded with File > Download > Web page (.html).
 
+{\centering \begin{figure}[h!]
+  \centering
+  \includegraphics[width=0.5\linewidth]{images/image1.png}
+  \caption{Downloading a document from Google Docs}
+\end{figure} \par}
+
 \section{Supported features}\label{id:h.3pfyws1px6lp}
 
 Things like \textbf{bold} and \textit{italics} among other things are supported.
@@ -46,7 +53,7 @@ Other features include:
   \item Links to the \underline{\href{https://github.com/domdomegg/gdoc2latex}{web}}, to an \underline{\href{mailto:someone@example.com}{email address}} or \underline{\hyperref[id:h.9brqho78gj4b]{within a document}}
 \end{itemize}
 
-\bibliography{example}
+\bibliography{output}
 
 \bibliographystyle{abbrvurl}
 

@@ -16,6 +16,8 @@ interface TextFormatSelectors {
     underlined: Selectors
     superscript: Selectors
     subscript: Selectors
+    center: Selectors
+    right: Selectors
 }
 type AddEntryFn = (entry: string) => void;
 type AddKeyEntryFn = (key: string, entry: string) => void;
@@ -49,7 +51,9 @@ const getTextFormatSelectors = (css: string): TextFormatSelectors => {
         italic: getSelector(css, 'font-style:italic'),
         underlined: getSelector(css, 'text-decoration:underline'),
         superscript: getSelector(css, 'vertical-align:super'),
-        subscript: getSelector(css, 'vertical-align:sub')
+        subscript: getSelector(css, 'vertical-align:sub'),
+        center: getSelector(css, 'text-align:center'),
+        right: getSelector(css, 'text-align:right')
     }
 }
 
@@ -135,6 +139,10 @@ const mapToLatex = (tfs: TextFormatSelectors, addBibliographyEntry: AddEntryFn, 
         return latex;
     }
 
+    if (elem.tagName == 'p' && !selectorMatches(elem, ['.title', '.subtitle'])) {
+        return mapText(tfs)(elem);
+    }
+
     const childrenText = elem.children.map(mapText(tfs)).filter(notNully).join('') || undefined;
     if (!childrenText) {
         return undefined;
@@ -170,10 +178,6 @@ const mapToLatex = (tfs: TextFormatSelectors, addBibliographyEntry: AddEntryFn, 
         return '\\subsubsubsection{' + childrenText + '}'
     }
 
-    if (elem.tagName == 'p') {
-        return childrenText;
-    }
-
     throw new Error('Unsupported tag ' + elem.tagName);
 }
 
@@ -184,6 +188,34 @@ const mapText = (tfs: TextFormatSelectors) => (elem: HimalayaNode): string | und
 
     if (elem.type == 'comment') {
         return undefined;
+    }
+
+    if (elem.tagName == 'img') {
+        const src = elem.attributes.find(attr => attr.key == 'src')
+
+        if (!src) {
+            throw new Error('img without src attribute')
+        }
+
+        let latex = '\\begin{figure}[h!]\n  \\centering\n';
+
+        // TODO: custom image widths
+        const lineWidths = 0.5;
+
+        latex += '  \\includegraphics[width=' + lineWidths + '\\linewidth]{' + src.value + '}\n'
+        
+        const alt = elem.attributes.find(attr => attr.key == 'alt')
+        if (alt?.value) {
+            latex += '  \\caption{' + alt.value + '}\n'
+        }
+        
+        const title = elem.attributes.find(attr => attr.key == 'title')
+        if (title?.value) {
+            latex += '  \\label{figure:' + title.value + '}\n'
+        }
+
+        latex += '\\end{figure}';
+        return latex;
     }
 
     if (!elem.children || elem.children.length == 0) {
@@ -249,6 +281,12 @@ const mapText = (tfs: TextFormatSelectors) => (elem: HimalayaNode): string | und
         if (selectorMatches(elem, tfs.subscript)) {
             s = '\\textsubscript{' + s + '}';
         }
+        if (selectorMatches(elem, tfs.center)) {
+            s = '{\\centering ' + s + ' \\par}';
+        }
+        if (selectorMatches(elem, tfs.right)) {
+            s = '{\\raggedleft ' + s + ' \\par}';
+        }
 
         return s;        
     }
@@ -256,6 +294,7 @@ const mapText = (tfs: TextFormatSelectors) => (elem: HimalayaNode): string | und
     throw new Error('Unsupported tag ' + elem.tagName);
 }
 
+// Returns whether any of the given selectors match the element
 const selectorMatches = (elem: HimalayaElement, selectors: Selectors) => {    
     return selectors.some(s => {
         // Selectors like '.aclass'
@@ -380,11 +419,24 @@ const gdoc2latex = (options: { input: string, output: string, force: boolean, te
         }
     }
     if (fs.existsSync(options.output) && fs.statSync(options.output).isDirectory()) {
-        throw new Error('Output is a directory at ' + options.output);
+        throw new Error('Output is a directory at ' + options.output + ', expected a file');
+    }
+
+    const imagesDirPath = path.dirname(options.output) + '/' + /* path.basename(options.output).slice(0, -4) + '_' + */ 'images';
+    const bibtexPath = options.output.slice(0, -4) + '.bib';
+
+    if(fs.existsSync(imagesDirPath) && !fs.statSync(imagesDirPath).isDirectory()) {
+        throw new Error('Images output directory is a file at ' + imagesDirPath + ', expected a directory.');
     }
 
     if(!options.force && fs.existsSync(options.output)) {
         throw new Error('Output file already exists at ' + options.output + '. Use -f or --force to overwrite.');
+    }
+    if(!options.force && fs.existsSync(bibtexPath)) {
+        throw new Error('Output file already exists at ' + bibtexPath + '. Use -f or --force to overwrite.');
+    }
+    if(!options.force && fs.existsSync(imagesDirPath) && fs.readdirSync(imagesDirPath).length > 0) {
+        throw new Error('Images output directory is not empty at ' + imagesDirPath + '. Use -f or --force to overwrite.');
     }
 
     if (!fs.existsSync(options.templateStart)) {
@@ -413,8 +465,21 @@ const gdoc2latex = (options: { input: string, output: string, force: boolean, te
         + '\n\n\\bibliography{' + path.basename(options.output).slice(0, -4) + '}\n\n'
         + fs.readFileSync(options.templateEnd, { encoding: 'utf8' });
 
-    fs.writeFileSync(options.output, combinedLatex);
-    fs.writeFileSync(options.output.slice(0, -4) + '.bib', bibtex);
+    fs.writeFileSync(options.output, combinedLatex, { flag: options.force ? 'w' : 'wx' });
+    fs.writeFileSync(bibtexPath, bibtex, { flag: options.force ? 'w' : 'wx' });
+
+    // Copy images if necessary
+    const inputImagesDirPath = path.dirname(options.input) + '/images';
+    if (inputImagesDirPath != imagesDirPath && fs.existsSync(inputImagesDirPath)) {
+        const inputImages = fs.readdirSync(inputImagesDirPath);
+        if (inputImages.length > 0 && !fs.existsSync(imagesDirPath)) {
+            fs.mkdirSync(imagesDirPath);
+        }
+
+        for (let i = 0; i < inputImages.length; i++) {
+            fs.copyFileSync(inputImagesDirPath + '/' + inputImages[i], imagesDirPath + '/' + path.basename(inputImages[i]), options.force ? undefined : fs.constants.COPYFILE_EXCL);
+        }
+    }
 }
 
 export default gdoc2latex;
