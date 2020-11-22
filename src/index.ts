@@ -434,11 +434,12 @@ const gdoc2latex = (options: { input: string, output: string, force: boolean, te
         throw new Error('Output is a directory at ' + options.output + ', expected a file');
     }
 
-    const imagesDirPath = path.dirname(options.output) + '/' + /* path.basename(options.output).slice(0, -4) + '_' + */ 'images';
+    const inputImagesDirPath = path.dirname(options.input) + '/images';
+    const outputImagesDirPath = path.dirname(options.output) + '/' + /* path.basename(options.output).slice(0, -4) + '_' + */ 'images';
     const bibtexPath = options.output.slice(0, -4) + '.bib';
 
-    if(fs.existsSync(imagesDirPath) && !fs.statSync(imagesDirPath).isDirectory()) {
-        throw new Error('Images output directory is a file at ' + imagesDirPath + ', expected a directory.');
+    if(fs.existsSync(outputImagesDirPath) && !fs.statSync(outputImagesDirPath).isDirectory()) {
+        throw new Error('Images output directory is a file at ' + outputImagesDirPath + ', expected a directory.');
     }
 
     if(!options.force && fs.existsSync(options.output)) {
@@ -447,8 +448,8 @@ const gdoc2latex = (options: { input: string, output: string, force: boolean, te
     if(!options.force && fs.existsSync(bibtexPath)) {
         throw new Error('Output file already exists at ' + bibtexPath + '. Use -f or --force to overwrite.');
     }
-    if(!options.force && fs.existsSync(imagesDirPath) && fs.readdirSync(imagesDirPath).length > 0) {
-        throw new Error('Images output directory is not empty at ' + imagesDirPath + '. Use -f or --force to overwrite.');
+    if(inputImagesDirPath !== outputImagesDirPath && !options.force && fs.existsSync(outputImagesDirPath) && fs.readdirSync(outputImagesDirPath).length > 0) {
+        throw new Error('Images output directory is not empty at ' + outputImagesDirPath + '. Use -f or --force to overwrite.');
     }
 
     if (!fs.existsSync(options.templateStart)) {
@@ -481,15 +482,14 @@ const gdoc2latex = (options: { input: string, output: string, force: boolean, te
     fs.writeFileSync(bibtexPath, bibtex, { flag: options.force ? 'w' : 'wx' });
 
     // Copy images if necessary
-    const inputImagesDirPath = path.dirname(options.input) + '/images';
-    if (inputImagesDirPath != imagesDirPath && fs.existsSync(inputImagesDirPath)) {
+    if (inputImagesDirPath != outputImagesDirPath && fs.existsSync(inputImagesDirPath)) {
         const inputImages = fs.readdirSync(inputImagesDirPath);
-        if (inputImages.length > 0 && !fs.existsSync(imagesDirPath)) {
-            fs.mkdirSync(imagesDirPath);
+        if (inputImages.length > 0 && !fs.existsSync(outputImagesDirPath)) {
+            fs.mkdirSync(outputImagesDirPath);
         }
 
         for (let i = 0; i < inputImages.length; i++) {
-            fs.copyFileSync(inputImagesDirPath + '/' + inputImages[i], imagesDirPath + '/' + path.basename(inputImages[i]), options.force ? undefined : fs.constants.COPYFILE_EXCL);
+            fs.copyFileSync(inputImagesDirPath + '/' + inputImages[i], outputImagesDirPath + '/' + path.basename(inputImages[i]), options.force ? undefined : fs.constants.COPYFILE_EXCL);
         }
     }
 }
