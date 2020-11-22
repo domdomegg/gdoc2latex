@@ -112,3 +112,7 @@ This will result in a complete `index.pdf`
 3. Run `npm install`
 4. Run `npm run build`
 5. Run `npm install -g`
+
+### Releases
+
+Versions follow the [semantic versioning spec](https://semver.org/). Use `npm version <major | minor | patch>` to bump the version, then push. Ensure you have set follow tags option to true with `git config --global push.followTags true`. GitHub actions will then pick it up and handle the actual publishing to the NPM registry.
