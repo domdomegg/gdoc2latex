@@ -6,6 +6,10 @@
   "bin": {
     "gdoc2latex": "./dist/cli.js"
   },
+  "files": [
+    "dist",
+    "default_templates"
+  ],
   "scripts": {
     "start:watch": "nodemon --watch 'src/**/*.ts' --exec 'ts-node' src/cli.ts",
     "start": "ts-node src/cli.ts",
