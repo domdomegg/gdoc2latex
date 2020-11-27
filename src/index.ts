@@ -128,13 +128,13 @@ const mapToLatex = (tfs: TextFormatSelectors, addBibliographyEntry: AddEntryFn, 
     if (elem.tagName == 'table') {
         const rows = (elem.children[0] as HimalayaElement).children as HimalayaElement[];
     
-        let latex = '\\begin{center}\\begin{tabular}{ |' + 'l|'.repeat(rows[0].children.length) + ' }\n  \\hline\n';
+        let latex = '\\begin{adjustbox}{center}\\begin{tabular}{ |' + 'l|'.repeat(rows[0].children.length) + ' }\n  \\hline\n';
     
         for (const row of rows) {
             latex += '  ' + row.children.map(mapText(tfs)).join(' & ') + ' \\\\\n  \\hline\n';
         }
     
-        latex += '\\end{tabular}\\end{center}';
+        latex += '\\end{tabular}\\end{adjustbox}\\\\';
     
         return latex;
     }
@@ -178,7 +178,7 @@ const mapToLatex = (tfs: TextFormatSelectors, addBibliographyEntry: AddEntryFn, 
         return '\\subsubsubsection{' + childrenText + '}'
     }
 
-    throw new Error('Unsupported tag ' + elem.tagName);
+    throw new Error('Unsupported tag ' + elem.tagName + ' with content:\n\t' + childrenText);
 }
 
 const mapText = (tfs: TextFormatSelectors) => (elem: HimalayaNode): string | undefined => {
@@ -210,7 +210,8 @@ const mapText = (tfs: TextFormatSelectors) => (elem: HimalayaNode): string | und
             widthText = widthText.slice(6, widthText.indexOf(';')).trim();
             const widthMatch = widthText.match(/^(\d+\.?\d*)px$/);
             if (widthMatch) {
-                lineWidths = (parseFloat(widthMatch[1]) / 588).toFixed(3);
+                // TODO: fetch the document width from the body's max-width
+                lineWidths = Math.min((parseFloat(widthMatch[1]) / 600), 1).toFixed(3);
             }
         }
 
@@ -325,6 +326,41 @@ const selectorMatches = (elem: HimalayaElement, selectors: Selectors) => {
     });
 }
 
+/**
+ * Tidies up latex citations by:
+ * - joining multiple citations: `\cite{ref1}\cite{ref2}` -> `\cite{ref1,ref2}`
+ * - replacing parentheses around a citation with parencite: `(\cite{ref1})` -> `\parencite{ref1}`
+ * - replacing space before citation with non-breaking space: ` \cite{ref1}` -> `~\cite{ref1}` (and parencite)
+ * @param latex LaTeX source to tidy up
+ */
+const citeTidier = (latex: string): string => {
+    // TODO: we can get away with more string splitting and slicing here, will be much more performant than all these regexes
+
+    // Join multiple citations
+    const multiCitationRegex = /(\\cite{([^}]*)}){2,}/g
+    latex = latex.replace(multiCitationRegex, (v) => {
+        const citationRegex = /\\cite{([^}]*)}/g
+        const refs = []
+        let match = citationRegex.exec(v);
+        while (match) {
+            refs.push(match[1]);
+            match = citationRegex.exec(v);
+        }
+        return '\\cite{' + refs.join(',') + '}';
+    })
+
+    // Replace parenthesis around a citation with parencite
+    const parenthesisCitation = /\(\\cite{([^}]*)}\)/g
+    const parenthesisCitationSingle = /\(\\cite{([^}]*)}\)/
+    latex = latex.replace(parenthesisCitation, (v) => '\\citep{' + (v.match(parenthesisCitationSingle) as RegExpMatchArray)[1] + '}');
+
+    // Replace space before citations
+    const spaceCitation = / \\(paren)?cite{[^}]*}/g
+    latex = latex.replace(spaceCitation, (v) => '~' + v.slice(1))
+
+    return latex;
+}
+
 const transformText = (text: string): string => he.decode(text)
     .replace(/\u00A0/g, ' ')
     .replace(/\\/g, '\\textbackslash')
@@ -386,10 +422,12 @@ const handleElems = (elems: HimalayaElement[], textSelectors: TextFormatSelector
     if (!title) throw new Error('Missing title')
     if (!latex) throw new Error('Missing latex')
     if (!bibtex) throw new Error('Missing bibtex')
-
+    
     for (const refId in footnotes) {
         latex = latex.replace('\\cite{' + refId + '}', '\\footnote{' + footnotes[refId] + '}')
     }
+
+    latex = citeTidier(latex);
 
     return {
         title,
@@ -404,7 +442,7 @@ const generateLatexTitle = ({ title, subtitle }: { title: string, subtitle?: str
         return '\\title{\\textbf{' + title + '}}';
     }
 
-    return '\\title{%\n  \\textbf{' + title + '}\n  \\linebreak \\linebreak\n  \\large{' + subtitle + '}\n}'
+    return '\\title{%\n  \\Huge{' + title + '}\n  \\\\\n  \\Large{' + subtitle + '}\n}'
 }
 
 const gdoc2latex = (options: { input: string, output: string, force: boolean, templateStart: string, templateEnd: string }) => {
@@ -466,15 +504,14 @@ const gdoc2latex = (options: { input: string, output: string, force: boolean, te
     // @ts-ignore
     const css: string = parsed[0].children[0].children[1].children[0].content;
     // @ts-ignore
-    const elems: HimalayaElement[] = parsed[0].children[1].children[0].children;
+    const elems: HimalayaElement[] = parsed[0].children[1].children;
 
     const { title, subtitle, latex, bibtex } = handleElems(elems, getTextFormatSelectors(css));
     
     const combinedLatex = 
-        generateLatexTitle({ title, subtitle })
+        generateLatexTitle({ title, subtitle }) + '\n'
         + fs.readFileSync(options.templateStart, { encoding: 'utf8' })
-        + '\n\n\\maketitle\n\n'
-        + latex
+        + '\n' + latex
         + '\n\n\\bibliography{' + path.basename(options.output).slice(0, -4) + '}\n\n'
         + fs.readFileSync(options.templateEnd, { encoding: 'utf8' });
 

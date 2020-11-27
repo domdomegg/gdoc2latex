@@ -1,16 +1,21 @@
 \documentclass[12pt]{article}
-\usepackage[a4paper,left=2.54cm,right=2.54cm,top=2.54cm,bottom=2.54cm]{geometry}
 
+\usepackage[a4paper,left=2.54cm,right=2.54cm,top=2.54cm,bottom=2.54cm]{geometry}
 \usepackage[T1]{fontenc}
 \usepackage[utf8]{inputenc}
 \usepackage{lmodern}
-
-\setlength\parindent{0em}
 \usepackage{parskip}
-\setcounter{tocdepth}{1}
-
 \usepackage{hyperref}
 \usepackage{graphicx}
+\usepackage{adjustbox}
+\usepackage{natbib}
+
+\setlength\parindent{0em}
+
+\bibliographystyle{abbrvnat}
+\setcitestyle{super,citesep={,},open={},close={}}
+
+\renewcommand{\thefootnote}{\roman{footnote}}
 
 \usepackage{titling}
 \predate{}
@@ -20,4 +25,8 @@
 \author{}
 \postauthor{}
 
+\setcounter{tocdepth}{1}
+
 \begin{document}
+
+\maketitle

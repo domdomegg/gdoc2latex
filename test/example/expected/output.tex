@@ -1,20 +1,26 @@
 \title{%
-  \textbf{gdoc2latex}
-  \linebreak \linebreak
-  \large{Converts Google Docs files to LaTeX\\~\\~Your Name\\~Department of Something\\~University of Somewhere}
-}\documentclass[12pt]{article}
-\usepackage[a4paper,left=2.54cm,right=2.54cm,top=2.54cm,bottom=2.54cm]{geometry}
+  \Huge{\textbf{gdoc2latex}}
+  \\
+  \Large{Converts Google Docs files to LaTeX\\~\\~Your Name\\~Department of Something\\~University of Somewhere}
+}
+\documentclass[12pt]{article}
 
+\usepackage[a4paper,left=2.54cm,right=2.54cm,top=2.54cm,bottom=2.54cm]{geometry}
 \usepackage[T1]{fontenc}
 \usepackage[utf8]{inputenc}
 \usepackage{lmodern}
-
-\setlength\parindent{0em}
 \usepackage{parskip}
-\setcounter{tocdepth}{1}
-
 \usepackage{hyperref}
 \usepackage{graphicx}
+\usepackage{adjustbox}
+\usepackage{natbib}
+
+\setlength\parindent{0em}
+
+\bibliographystyle{abbrvnat}
+\setcitestyle{super,citesep={,},open={},close={}}
+
+\renewcommand{\thefootnote}{\roman{footnote}}
 
 \usepackage{titling}
 \predate{}
@@ -24,18 +30,18 @@
 \author{}
 \postauthor{}
 
+\setcounter{tocdepth}{1}
+
 \begin{document}
 
-
 \maketitle
-
 \section{Usage}\label{id:h.9brqho78gj4b}
 
 Here’s some content, originally written in Google Docs. It demonstrates using some of the features of gdoc2latex. It was downloaded with File > Download > Web page (.html).
 
 {\centering \begin{figure}[h!]
   \centering
-  \includegraphics[width=0.590\linewidth]{images/image1.png}
+  \includegraphics[width=0.578\linewidth]{images/image1.png}
   \caption{Downloading a document from Google Docs}
 \end{figure} \par}
 
@@ -55,7 +61,5 @@ Other features include:
 \end{itemize}
 
 \bibliography{output}
-
-\bibliographystyle{abbrvurl}
 
 \end{document}
