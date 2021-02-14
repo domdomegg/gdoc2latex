@@ -219,7 +219,7 @@ const mapText = (tfs: TextFormatSelectors) => (elem: HimalayaNode): string | und
         
         const alt = elem.attributes.find(attr => attr.key == 'alt')
         if (alt?.value) {
-            latex += '  \\caption{' + alt.value + '}\n'
+            latex += '  \\caption{' + transformText(alt.value) + '}\n'
         }
         
         const title = elem.attributes.find(attr => attr.key == 'title')
