@@ -50,6 +50,7 @@ Supported:
 - Drawings (linked and unlinked): Inserts figure
 - Drawing captions (use alt text): Inserts `\caption`
 - Custom image, chart and drawing widths
+- Code \`inline\` and in blocks (\`\`\`)
 
 Not supported:
 
@@ -97,10 +98,10 @@ gdoc2latex will output two files: a `.tex` and `.bib`
 With pdflatex and bibtex, `index.tex` and `index.bib` can be compiled with:
 
 ```
-pdflatex index
+pdflatex -shell-escape index
 bibtex index
-pdflatex index
-pdflatex index
+pdflatex -shell-escape index
+pdflatex -shell-escape index
 ```
 
 This will result in a complete `index.pdf`

@@ -14,11 +14,17 @@
 \usepackage{graphicx}
 \usepackage{adjustbox}
 \usepackage{natbib}
+\usepackage[dvipsnames]{xcolor}
+\usepackage{minted}
 
 \setlength\parindent{0em}
 
 \bibliographystyle{abbrvnat}
 \setcitestyle{super,citesep={,},open={},close={}}
+
+\definecolor{lightgrey}{rgb}{0.95,0.95,0.95}
+\setminted{bgcolor=lightgrey}
+\setmintedinline{bgcolor=lightgrey,escapeinside=||,mathescape=true}
 
 \renewcommand{\thefootnote}{\roman{footnote}}
 
@@ -35,8 +41,10 @@
 \begin{document}
 
 \maketitle
-\section{Usage}\label{id:h.9brqho78gj4b}
 
+
+
+\section{Usage}\label{id:h.9brqho78gj4b}
 Here’s some content, originally written in Google Docs. It demonstrates using some of the features of gdoc2latex. It was downloaded with File > Download > Web page (.html).
 
 {\centering \begin{figure}[h!]
@@ -44,13 +52,10 @@ Here’s some content, originally written in Google Docs. It demonstrates using 
   \includegraphics[width=0.578\linewidth]{images/image1.png}
   \caption{Downloading a document from Google Docs}
 \end{figure} \par}
-
 \section{Supported features}\label{id:h.3pfyws1px6lp}
-
 Things like \textbf{bold} and \textit{italics} among other things are supported.
 
 Other features include:
-
 \begin{itemize}
   \item Lists
   \item \underline{Underline}
@@ -58,7 +63,23 @@ Other features include:
   \item Footnotes\footnote{Like this! One limitation though, they can’t start with an @ symbol}
   \item Both \textsuperscript{superscript} and \textsubscript{subscript}
   \item Links to the \underline{\href{https://github.com/domdomegg/gdoc2latex}{web}}, to an \underline{\href{mailto:someone@example.com}{email address}} or \underline{\hyperref[id:h.9brqho78gj4b]{within a document}}
+  \item Working “double quotes” and ‘single quotes’
 \end{itemize}
+
+Plus both \mintinline{text}{|inline|} code snippets and block snippets:
+
+\begin{minted}[breaklines]{text}
+These both use the minted package, and follow roughly markdown syntax… ish?
+
+It should also keep
+the line spacing correct
+\end{minted}
+
+You can also write $math$ and use \LaTeX\ directly as an escape hatch (escaping uses the \textbackslash \ character, e.g. \$20 and \textbackslash LaTeX).
+
+
+
+
 
 \bibliography{output}
 

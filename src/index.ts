@@ -44,6 +44,7 @@ interface HimalayaComment {
 }
 
 const notNully = (x: any) => !!x;
+const nullyToEmptyString = (x: any) => notNully(x) ? x : "";
 
 const getTextFormatSelectors = (css: string): TextFormatSelectors => {
     return {
@@ -83,7 +84,7 @@ const mapToLatex = (tfs: TextFormatSelectors, addBibliographyEntry: AddEntryFn, 
     }
 
     if (elem.tagName == 'div') {
-        const content: string | undefined = elem.children.map(mapToLatex(tfs, addBibliographyEntry, addFootnoteEntry, setTitle)).filter(notNully).join('\n\n');
+        const content: string | undefined = elem.children.map(mapToLatex(tfs, addBibliographyEntry, addFootnoteEntry, setTitle)).map(nullyToEmptyString).join('\n\n');
 
         // See footnote content detection elsewhere
         // This is pretty disgusting, pls don't hate me
@@ -143,7 +144,7 @@ const mapToLatex = (tfs: TextFormatSelectors, addBibliographyEntry: AddEntryFn, 
         return mapText(tfs)(elem);
     }
 
-    const childrenText = elem.children.map(mapText(tfs)).filter(notNully).join('') || undefined;
+    const childrenText = elem.children.map(mapText(tfs)).map(nullyToEmptyString).join('') || undefined;
     if (!childrenText) {
         return undefined;
     }
@@ -235,7 +236,7 @@ const mapText = (tfs: TextFormatSelectors) => (elem: HimalayaNode): string | und
         return undefined;
     }
 
-    const childrenText: string | undefined = elem.children.map(mapText(tfs)).filter(notNully).join('') || undefined;
+    const childrenText: string | undefined = elem.children.map(mapText(tfs)).filter(nullyToEmptyString).join('') || undefined;
     if (!notNully(childrenText)) {
         return undefined;
     }
@@ -361,15 +362,25 @@ const citeTidier = (latex: string): string => {
     return latex;
 }
 
+const blockSnippeter = (latex: string): string => latex
+    .split('\\blocksnippet{')
+    .map((s, i) => {
+        if (i % 2 == 0) return s;
+        const explictLang = s.match(/^[A-Za-z]*/)![0];
+        return '\\begin{minted}[breaklines' + (explictLang == "math" ? ',escapeinside=||,mathescape=true' : '') + ']{' + (explictLang && explictLang != "math" ? explictLang : 'text')  + '}'
+            + s.slice(explictLang.length + 1)
+            + '\\end{minted'; // nb: the split means we'll have a `}` after with correct usage
+    })
+    .join('');
+
 const transformText = (text: string): string => he.decode(text)
     .replace(/\u00A0/g, ' ')
-    .replace(/\\/g, '\\textbackslash ')
+    .replace(/\\\\/g, '\\textbackslash ')
     .replace(/~/g, '\\textasciitilde ')
     .replace(/\^/g, '\\textasciicircum ')
     .replace(/&#39;/g, '\'')
     .replace(/&/g, '\\&')
     .replace(/%/g, '\\%')
-    .replace(/\$/g, '\\$')
     .replace(/#/g, '\\#')
     .replace(/_/g, '\\_')
     .replace(/{/g, '\\{')
@@ -415,6 +426,8 @@ const transformText = (text: string): string => he.decode(text)
     .replace(/⊇/g, '$\\supseteq$')
     .replace(/⊥/g, '$\\bot$')
     .replace(/⊤/g, '$\\top$')
+    .replace(/```([a-zA-Z]*)/g, '\\blocksnippet{$1}')
+    .split(/`/g).map((s, i) => i % 2 == 0 ? s : '\\mintinline{text}{|' + s + '|}').join('')
     ;
 
 const handleElems = (elems: HimalayaElement[], textSelectors: TextFormatSelectors): {
@@ -459,7 +472,7 @@ const handleElems = (elems: HimalayaElement[], textSelectors: TextFormatSelector
         }
     }
 
-    let latex = elems.map(mapToLatex(textSelectors, addBibliographyEntry, addFootnoteEntry, setTitle)).filter(notNully).join('\n\n');
+    let latex = elems.map(mapToLatex(textSelectors, addBibliographyEntry, addFootnoteEntry, setTitle)).map(nullyToEmptyString).join('\n');
 
     if (!title) throw new Error('Missing title')
     if (!latex) throw new Error('Missing latex')
@@ -470,6 +483,7 @@ const handleElems = (elems: HimalayaElement[], textSelectors: TextFormatSelector
     }
 
     latex = citeTidier(latex);
+    latex = blockSnippeter(latex);
 
     return {
         title,

@@ -9,11 +9,17 @@
 \usepackage{graphicx}
 \usepackage{adjustbox}
 \usepackage{natbib}
+\usepackage[dvipsnames]{xcolor}
+\usepackage{minted}
 
 \setlength\parindent{0em}
 
 \bibliographystyle{abbrvnat}
 \setcitestyle{super,citesep={,},open={},close={}}
+
+\definecolor{lightgrey}{rgb}{0.95,0.95,0.95}
+\setminted{bgcolor=lightgrey}
+\setmintedinline{bgcolor=lightgrey,escapeinside=||,mathescape=true}
 
 \renewcommand{\thefootnote}{\roman{footnote}}
 
