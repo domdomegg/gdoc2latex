@@ -434,7 +434,7 @@ const handleElems = (elems: HimalayaElement[], textSelectors: TextFormatSelector
     title: string,
     subtitle?: string,
     latex: string,
-    bibtex: string
+    bibtex?: string
 } => {
     // Gross, should actually return these properly
     // This function should shield us higher up so we can refactor later
@@ -476,7 +476,6 @@ const handleElems = (elems: HimalayaElement[], textSelectors: TextFormatSelector
 
     if (!title) throw new Error('Missing title')
     if (!latex) throw new Error('Missing latex')
-    if (!bibtex) throw new Error('Missing bibtex')
     
     for (const refId in footnotes) {
         latex = latex.replace('\\cite{' + refId + '}', '\\footnote{' + footnotes[refId] + '}')
@@ -555,7 +554,7 @@ const gdoc2latex = (options: { input: string, output: string, force: boolean, te
     }
 
     const html: string = fs.readFileSync(options.input, { encoding: 'utf8' });
-    const parsed: HimalayaElement[] = himalaya.parse(html);
+    const parsed: HimalayaElement[] = himalaya.parse(html.trim());
     
     // @ts-ignore
     const css: string = parsed[0].children[0].children[1].children[0].content;
@@ -572,7 +571,7 @@ const gdoc2latex = (options: { input: string, output: string, force: boolean, te
         + fs.readFileSync(options.templateEnd, { encoding: 'utf8' });
 
     fs.writeFileSync(options.output, combinedLatex, { flag: options.force ? 'w' : 'wx' });
-    fs.writeFileSync(bibtexPath, bibtex, { flag: options.force ? 'w' : 'wx' });
+    if (bibtex) fs.writeFileSync(bibtexPath, bibtex, { flag: options.force ? 'w' : 'wx' });
 
     // Copy images if necessary
     if (inputImagesDirPath != outputImagesDirPath && fs.existsSync(inputImagesDirPath)) {

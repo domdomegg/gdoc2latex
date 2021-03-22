@@ -20,7 +20,11 @@ const e2eTest = (directory: string) => {
     // Check we've generated the right files
     const generatedFiles = fs.readdirSync(directory + '/actual');
     expect(generatedFiles).toContain('output.tex')
-    expect(generatedFiles).toContain('output.bib')
+    if (fs.existsSync(directory + '/actual/output.bib')) {
+        expect(generatedFiles).toContain('output.bib')
+    } else {
+        expect(generatedFiles).not.toContain('output.bib')
+    }
     if (fs.existsSync(directory + '/images')) {
         expect(generatedFiles).toContain('images')
         expect(fs.readdirSync(directory + '/actual/images')).toEqual(fs.readdirSync(directory + '/images'))
@@ -28,7 +32,9 @@ const e2eTest = (directory: string) => {
 
     // And that they're what we expect
     expect(file(directory + '/actual/output.tex')).toEqual(file(directory + '/expected/output.tex'))
-    expect(file(directory + '/actual/output.bib')).toEqual(file(directory + '/expected/output.bib'))
+    if (fs.existsSync(directory + '/actual/output.bib')) {
+        expect(file(directory + '/actual/output.bib')).toEqual(file(directory + '/expected/output.bib'))
+    }
     
     // Disabled for performance
     // if (fs.existsSync(directory + '/images')) {
@@ -42,6 +48,6 @@ const e2eTest = (directory: string) => {
 // Load a file at a path
 const file = (fileName: string): string => fs.readFileSync(fileName, { encoding: 'utf8' })
 
-test('example document', () => {
-    e2eTest(__dirname + '/example')
-})
+test.each(fs.readdirSync(__dirname).filter(f => f != 'e2e.test.ts'))('%s', (folder) => {
+    e2eTest(__dirname + '/' + folder)
+});
