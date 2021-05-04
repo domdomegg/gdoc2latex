@@ -4,6 +4,7 @@ import querystring from 'querystring';
 import he from 'he';
 // @ts-ignore
 import * as himalaya from 'himalaya';
+import { end, start } from './default_templates';
 
 /**
  * Array of CSS selectors that can select an element
@@ -515,10 +516,10 @@ const checkType = (target: any, type: "string" | "number" | "boolean" | "functio
 
 export const gdoc2latex = (options: { inputHTML: string, outputFile?: string, templateStart?: string, templateEnd?: string }): { latex: string, bibtex?: string } => {
     if (!options.templateStart) {
-        options.templateStart = fs.readFileSync(__dirname + '/../default_templates/start.tex', { encoding: 'utf-8' });
+        options.templateStart = start;
     }
     if (!options.templateEnd) {
-        options.templateEnd = fs.readFileSync(__dirname + '/../default_templates/end.tex', { encoding: 'utf-8' });
+        options.templateEnd = end;
     }
     if (!options.outputFile) {
         options.outputFile = "index.tex";

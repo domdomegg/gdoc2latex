@@ -1,5 +1,6 @@
-import fs from 'fs'
+import fs from 'fs';
 import gdoc2latex, { gdoc2latexFs } from '../src/index'
+import { read } from './utils';
 
 // Run an end to end test for a directory
 const e2eTest = (directory: string) => {
@@ -57,9 +58,6 @@ const e2eTest = (directory: string) => {
     }
 }
 
-// Read a file at a path
-const read = (fileName: string): string => fs.readFileSync(fileName, { encoding: 'utf8' })
-
-test.each(fs.readdirSync(__dirname).filter(f => f != 'e2e.test.ts'))('%s', (folder) => {
+test.each(fs.readdirSync(__dirname).filter(f => !f.endsWith('.ts')))('%s', (folder) => {
     e2eTest(__dirname + '/' + folder)
 });
