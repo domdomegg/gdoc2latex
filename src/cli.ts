@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import gdoc2latex from './index';
+import { gdoc2latexFs } from './index';
 import { program } from 'commander';
 
 const cli = (args: string[]) => {
@@ -16,7 +16,7 @@ const cli = (args: string[]) => {
     const startTemplateLocation = program.templateStart ? program.templateStart : __dirname + '/../default_templates/start.tex'
     const endTemplateLocation = program.templateEnd ? program.templateEnd : __dirname + '/../default_templates/end.tex'
     
-    gdoc2latex({ input: program.input, output: program.output, force: program.force, templateStart: startTemplateLocation, templateEnd: endTemplateLocation })
+    gdoc2latexFs({ inputFile: program.input, outputFile: program.output, forceOverwrite: program.force, templateStartFile: startTemplateLocation, templateEndFile: endTemplateLocation })
 }
 
 try {

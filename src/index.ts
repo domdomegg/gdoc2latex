@@ -431,7 +431,7 @@ const transformText = (text: string): string => he.decode(text)
     ;
 
 const handleElems = (elems: HimalayaElement[], textSelectors: TextFormatSelectors): {
-    title: string,
+    title?: string,
     subtitle?: string,
     latex: string,
     bibtex?: string
@@ -474,7 +474,6 @@ const handleElems = (elems: HimalayaElement[], textSelectors: TextFormatSelector
 
     let latex = elems.map(mapToLatex(textSelectors, addBibliographyEntry, addFootnoteEntry, setTitle)).map(nullyToEmptyString).join('\n');
 
-    if (!title) throw new Error('Missing title')
     if (!latex) throw new Error('Missing latex')
     
     for (const refId in footnotes) {
@@ -492,69 +491,45 @@ const handleElems = (elems: HimalayaElement[], textSelectors: TextFormatSelector
     }
 }
 
-const generateLatexTitle = ({ title, subtitle }: { title: string, subtitle?: string }) => {
-    if (!subtitle) {
+const generateLatexTitle = ({ title, subtitle }: { title?: string, subtitle?: string }): string => {
+    if (title && subtitle) {
+        return '\\title{%\n  \\Huge{' + title + '}\n  \\\\\n  \\Large{' + subtitle + '}\n}';
+    }
+
+    if (title && !subtitle) {
         return '\\title{\\textbf{' + title + '}}';
     }
 
-    return '\\title{%\n  \\Huge{' + title + '}\n  \\\\\n  \\Large{' + subtitle + '}\n}'
+    if (!title && subtitle) {
+        return '\\title{\\textbf{' + subtitle + '}}';
+    }
+    
+    return '\\title{\\textbf{Document Title}}';    
 }
 
-const gdoc2latex = (options: { input: string, output: string, force: boolean, templateStart: string, templateEnd: string }) => {
-    if(!options.input.endsWith('.html')) {
-        throw new Error('Input file should start with .html but is ' + options.input)
+const checkType = (target: any, type: "string" | "number" | "boolean" | "function" | "object", name: string) => {
+    if (typeof target != type) {
+        throw new Error('Expected ' + name + ' to have type "' + type + '", but got "' + typeof target + '" instead');
     }
+}
 
-    if (!fs.existsSync(options.input)) {
-        throw new Error('Input HTML not found at ' + options.input);
+export const gdoc2latex = (options: { inputHTML: string, outputFile?: string, templateStart?: string, templateEnd?: string }): { latex: string, bibtex?: string } => {
+    if (!options.templateStart) {
+        options.templateStart = fs.readFileSync(__dirname + '/../default_templates/start.tex', { encoding: 'utf-8' });
     }
-    if (!fs.statSync(options.input).isFile()) {
-        throw new Error('Input HTML not a file at ' + options.input);
+    if (!options.templateEnd) {
+        options.templateEnd = fs.readFileSync(__dirname + '/../default_templates/end.tex', { encoding: 'utf-8' });
     }
+    if (!options.outputFile) {
+        options.outputFile = "index.tex";
+    }
+    checkType(options, "object", 'options');
+    checkType(options.inputHTML, "string", 'input HTML option');
+    checkType(options.outputFile, "string", 'output file option');
+    checkType(options.templateStart, "string", 'template start option');
+    checkType(options.templateEnd, "string", 'template end option');
 
-    if(!options.output.endsWith('.tex')) {
-        throw new Error('Output file should end with .tex but is ' + options.output)
-    }
-
-    if (!fs.existsSync(path.dirname(options.output))) {
-        if (options.force) {
-            fs.mkdirSync(path.dirname(options.output), { recursive: true })
-        } else {
-            throw new Error('Output directory not found at ' + path.dirname(options.output) + '. Use -f or --force to create.');
-        }
-    }
-    if (fs.existsSync(options.output) && fs.statSync(options.output).isDirectory()) {
-        throw new Error('Output is a directory at ' + options.output + ', expected a file');
-    }
-
-    const inputImagesDirPath = path.dirname(options.input) + '/images';
-    const outputImagesDirPath = path.dirname(options.output) + '/' + /* path.basename(options.output).slice(0, -4) + '_' + */ 'images';
-    const bibtexPath = options.output.slice(0, -4) + '.bib';
-
-    if(fs.existsSync(outputImagesDirPath) && !fs.statSync(outputImagesDirPath).isDirectory()) {
-        throw new Error('Images output directory is a file at ' + outputImagesDirPath + ', expected a directory.');
-    }
-
-    if(!options.force && fs.existsSync(options.output)) {
-        throw new Error('Output file already exists at ' + options.output + '. Use -f or --force to overwrite.');
-    }
-    if(!options.force && fs.existsSync(bibtexPath)) {
-        throw new Error('Output file already exists at ' + bibtexPath + '. Use -f or --force to overwrite.');
-    }
-    if(inputImagesDirPath !== outputImagesDirPath && !options.force && fs.existsSync(outputImagesDirPath) && fs.readdirSync(outputImagesDirPath).length > 0) {
-        throw new Error('Images output directory is not empty at ' + outputImagesDirPath + '. Use -f or --force to overwrite.');
-    }
-
-    if (!fs.existsSync(options.templateStart)) {
-        throw new Error('Start template not found at ' + options.templateStart);
-    }
-
-    if(!fs.existsSync(options.templateEnd)) {
-        throw new Error('End template not found at ' + options.templateEnd);
-    }
-
-    const html: string = fs.readFileSync(options.input, { encoding: 'utf8' });
-    const parsed: HimalayaElement[] = himalaya.parse(html.trim());
+    const parsed: HimalayaElement[] = himalaya.parse(options.inputHTML.trim());
     
     // @ts-ignore
     const css: string = parsed[0].children[0].children[1].children[0].content;
@@ -565,13 +540,90 @@ const gdoc2latex = (options: { input: string, output: string, force: boolean, te
     
     const combinedLatex = 
         generateLatexTitle({ title, subtitle }) + '\n'
-        + fs.readFileSync(options.templateStart, { encoding: 'utf8' })
+        + options.templateStart
         + '\n' + latex
-        + '\n\n\\bibliography{' + path.basename(options.output).slice(0, -4) + '}\n\n'
-        + fs.readFileSync(options.templateEnd, { encoding: 'utf8' });
+        + '\n\n\\bibliography{' + path.basename(options.outputFile).slice(0, -4) + '}\n\n'
+        + options.templateEnd;
+        
+    return {
+        latex: combinedLatex,
+        bibtex
+    }
+}
 
-    fs.writeFileSync(options.output, combinedLatex, { flag: options.force ? 'w' : 'wx' });
-    if (bibtex) fs.writeFileSync(bibtexPath, bibtex, { flag: options.force ? 'w' : 'wx' });
+export const gdoc2latexFs = (options: { inputFile: string, outputFile: string, forceOverwrite: boolean, templateStartFile: string, templateEndFile: string }) => {
+    checkType(options, "object", 'options');
+    checkType(options.inputFile, "string", 'input file option');
+    checkType(options.outputFile, "string", 'output file option');
+    checkType(options.forceOverwrite, "boolean", 'force overwrite option');
+    checkType(options.templateStartFile, "string", 'template start file option');
+    checkType(options.templateEndFile, "string", 'template end file option');
+    
+    if (!options.inputFile.endsWith('.html')) {
+        throw new Error('Input file should start with .html but is ' + options.inputFile);
+    }
+
+    if (!fs.existsSync(options.inputFile)) {
+        throw new Error('Input HTML not found at ' + options.inputFile);
+    }
+    if (!fs.statSync(options.inputFile).isFile()) {
+        throw new Error('Input HTML not a file at ' + options.inputFile);
+    }
+
+    if(!options.outputFile.endsWith('.tex')) {
+        throw new Error('Output file should end with .tex but is ' + options.outputFile);
+    }
+
+    if (!fs.existsSync(path.dirname(options.outputFile))) {
+        if (options.forceOverwrite) {
+            fs.mkdirSync(path.dirname(options.outputFile), { recursive: true });
+        } else {
+            throw new Error('Output directory not found at ' + path.dirname(options.outputFile) + '. Use -f or --force to create.');
+        }
+    }
+    if (fs.existsSync(options.outputFile) && fs.statSync(options.outputFile).isDirectory()) {
+        throw new Error('Output is a directory at ' + options.outputFile + ', expected a file');
+    }
+
+    const inputImagesDirPath = path.dirname(options.inputFile) + '/images';
+    const outputImagesDirPath = path.dirname(options.outputFile) + '/' + /* path.basename(options.output).slice(0, -4) + '_' + */ 'images';
+    const bibtexPath = options.outputFile.slice(0, -4) + '.bib';
+
+    if(fs.existsSync(outputImagesDirPath) && !fs.statSync(outputImagesDirPath).isDirectory()) {
+        throw new Error('Images output directory is a file at ' + outputImagesDirPath + ', expected a directory.');
+    }
+
+    if(!options.forceOverwrite && fs.existsSync(options.outputFile)) {
+        throw new Error('Output file already exists at ' + options.outputFile + '. Use -f or --force to overwrite.');
+    }
+    if(!options.forceOverwrite && fs.existsSync(bibtexPath)) {
+        throw new Error('Output file already exists at ' + bibtexPath + '. Use -f or --force to overwrite.');
+    }
+    if(inputImagesDirPath !== outputImagesDirPath && !options.forceOverwrite && fs.existsSync(outputImagesDirPath) && fs.readdirSync(outputImagesDirPath).length > 0) {
+        throw new Error('Images output directory is not empty at ' + outputImagesDirPath + '. Use -f or --force to overwrite.');
+    }
+
+    if (!fs.existsSync(options.templateStartFile)) {
+        throw new Error('Start template not found at ' + options.templateStartFile);
+    }
+
+    if(!fs.existsSync(options.templateEndFile)) {
+        throw new Error('End template not found at ' + options.templateEndFile);
+    }
+
+    const html: string = fs.readFileSync(options.inputFile, { encoding: 'utf8' });
+    const templateStart: string = fs.readFileSync(options.templateStartFile, { encoding: 'utf8' })
+    const templateEnd: string = fs.readFileSync(options.templateEndFile, { encoding: 'utf8' })
+    
+    const { latex, bibtex } = gdoc2latex({
+        inputHTML: html,
+        outputFile: options.outputFile,
+        templateStart,
+        templateEnd
+    });
+
+    fs.writeFileSync(options.outputFile, latex, { flag: options.forceOverwrite ? 'w' : 'wx' });
+    if (bibtex) fs.writeFileSync(bibtexPath, bibtex, { flag: options.forceOverwrite ? 'w' : 'wx' });
 
     // Copy images if necessary
     if (inputImagesDirPath != outputImagesDirPath && fs.existsSync(inputImagesDirPath)) {
@@ -581,7 +633,7 @@ const gdoc2latex = (options: { input: string, output: string, force: boolean, te
         }
 
         for (let i = 0; i < inputImages.length; i++) {
-            fs.copyFileSync(inputImagesDirPath + '/' + inputImages[i], outputImagesDirPath + '/' + path.basename(inputImages[i]), options.force ? undefined : fs.constants.COPYFILE_EXCL);
+            fs.copyFileSync(inputImagesDirPath + '/' + inputImages[i], outputImagesDirPath + '/' + path.basename(inputImages[i]), options.forceOverwrite ? undefined : fs.constants.COPYFILE_EXCL);
         }
     }
 }
