@@ -1,6 +1,6 @@
 {
   "name": "gdoc2latex",
-  "version": "4.0.0",
+  "version": "4.1.0",
   "description": "Converts Google Docs files to Latex",
   "main": "./dist/index.js",
   "bin": {
