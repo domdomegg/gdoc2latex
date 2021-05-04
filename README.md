@@ -1,6 +1,6 @@
 # gdoc2latex
 
-Converts Google Docs files to LaTeX
+Converts Google Docs files to LaTeX. Try it in your browser with the [gdoc2latex GUI](https://domdomegg.github.io/gdoc2latex-gui/).
 
 ## Install
 
