@@ -60,7 +60,7 @@ Not supported:
 - Custom table, image, chart and drawing alignment
 - Custom font sizing
 
-(these aren't necessarily out of scope, but just haven't been implemented yet)
+(these aren't definitely out of scope, but they haven't been implemented yet)
 
 ## Detailed usage
 
