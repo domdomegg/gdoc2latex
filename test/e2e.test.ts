@@ -6,7 +6,7 @@ import { read } from './utils';
 const e2eTest = (directory: string) => {
     // Clean 'actual' directory by deleting it
     if (fs.existsSync(directory + '/actual')) {
-        fs.rmdirSync(directory + '/actual', { recursive: true });
+        fs.rmSync(directory + '/actual', { recursive: true });
     }
 
     // Run gdoc2latex
@@ -48,7 +48,7 @@ const e2eTest = (directory: string) => {
     // And check that the non-fs version also returns the correct LaTeX and BibTeX sources
     const { latex, bibtex } = gdoc2latex({
         inputHTML: read(directory + '/input.html'),
-        outputFile: directory + '/actual/output.tex',
+        outputFile: 'output.tex',
         templateStart: read(__dirname + '/../default_templates/start.tex'),
         templateEnd: read(__dirname + '/../default_templates/end.tex')
     });
