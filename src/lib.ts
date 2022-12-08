@@ -1,4 +1,3 @@
-import querystring from 'querystring';
 import he from 'he';
 // @ts-ignore
 import * as himalaya from 'himalaya';
@@ -9,7 +8,7 @@ import { checkType } from './helper';
  * Array of CSS selectors that can select an element
  * @example ['.aclass', '#some_id', 'h3'] 
  */
-type Selectors = string[] 
+type Selectors = string[]
 interface TextFormatSelectors {
     bold: Selectors
     italic: Selectors
@@ -58,10 +57,10 @@ const getTextFormatSelectors = (css: string): TextFormatSelectors => {
     }
 }
 
-const getSelector = (css: string, selector: string): Selectors => 
+const getSelector = (css: string, selector: string): Selectors =>
     css.split(selector).slice(0, -1).map(fragment => {
         const newFragment = fragment.slice(0, fragment.lastIndexOf('{'));
-        return newFragment.slice(newFragment.lastIndexOf('}')+1);
+        return newFragment.slice(newFragment.lastIndexOf('}') + 1);
     });
 
 const mapToLatex = (tfs: TextFormatSelectors, addBibliographyEntry: AddEntryFn, addFootnoteEntry: AddKeyEntryFn, setTitle: SetTitleFn) => (elem: HimalayaNode): string | undefined => {
@@ -128,15 +127,15 @@ const mapToLatex = (tfs: TextFormatSelectors, addBibliographyEntry: AddEntryFn, 
 
     if (elem.tagName == 'table') {
         const rows = (elem.children[0] as HimalayaElement).children as HimalayaElement[];
-    
+
         let latex = '\\begin{adjustbox}{center}\\begin{tabular}{ |' + 'l|'.repeat(rows[0].children.length) + ' }\n  \\hline\n';
-    
+
         for (const row of rows) {
             latex += '  ' + row.children.map(mapText(tfs)).join(' & ') + ' \\\\\n  \\hline\n';
         }
-    
+
         latex += '\\end{tabular}\\end{adjustbox}\\\\';
-    
+
         return latex;
     }
 
@@ -217,12 +216,12 @@ const mapText = (tfs: TextFormatSelectors) => (elem: HimalayaNode): string | und
         }
 
         latex += '  \\includegraphics[width=' + lineWidths + '\\linewidth]{' + src.value + '}\n'
-        
+
         const alt = elem.attributes.find(attr => attr.key == 'alt')
         if (alt?.value) {
             latex += '  \\caption{' + transformText(alt.value) + '}\n'
         }
-        
+
         const title = elem.attributes.find(attr => attr.key == 'title')
         if (title?.value) {
             latex += '  \\label{figure:' + title.value + '}\n'
@@ -261,12 +260,13 @@ const mapText = (tfs: TextFormatSelectors) => (elem: HimalayaNode): string | und
         if (href) {
             // Within document
             if (href.value.startsWith('#')) {
-                return '\\hyperref[id:' + href.value.slice(1) + ']{' + childrenText  + '}'
+                return '\\hyperref[id:' + href.value.slice(1) + ']{' + childrenText + '}'
             }
 
             // Attempt to remove Google redirects
             if (href.value.startsWith('https://www.google.com/url?')) {
-                const q = querystring.parse(href.value.slice(href.value.indexOf('?') + 1), '&amp;').q;
+                const params = new URLSearchParams(new URL(href.value).search);
+                const q = params.get('q');
                 if (typeof q == "string") {
                     return '\\href{' + transformText(q) + '}{' + childrenText + '}'
                 }
@@ -302,14 +302,14 @@ const mapText = (tfs: TextFormatSelectors) => (elem: HimalayaNode): string | und
             s = '{\\raggedleft ' + s + ' \\par}';
         }
 
-        return s;        
+        return s;
     }
 
     throw new Error('Unsupported tag ' + elem.tagName);
 }
 
 // Returns whether any of the given selectors match the element
-const selectorMatches = (elem: HimalayaElement, selectors: Selectors) => {    
+const selectorMatches = (elem: HimalayaElement, selectors: Selectors) => {
     return selectors.some(s => {
         // Selectors like '.aclass'
         if (s.startsWith('.')) {
@@ -367,7 +367,7 @@ const blockSnippeter = (latex: string): string => latex
     .map((s, i) => {
         if (i % 2 == 0) return s;
         const explictLang = s.match(/^[A-Za-z]*/)![0];
-        return '\\begin{minted}[breaklines' + (explictLang == "math" ? ',escapeinside=||,mathescape=true' : '') + ']{' + (explictLang && explictLang != "math" ? explictLang : 'text')  + '}'
+        return '\\begin{minted}[breaklines' + (explictLang == "math" ? ',escapeinside=||,mathescape=true' : '') + ']{' + (explictLang && explictLang != "math" ? explictLang : 'text') + '}'
             + s.slice(explictLang.length + 1)
             + '\\end{minted'; // nb: the split means we'll have a `}` after with correct usage
     })
@@ -475,7 +475,7 @@ const handleElems = (elems: HimalayaElement[], textSelectors: TextFormatSelector
     let latex = elems.map(mapToLatex(textSelectors, addBibliographyEntry, addFootnoteEntry, setTitle)).map(nullyToEmptyString).join('\n');
 
     if (!latex) throw new Error('Missing latex')
-    
+
     for (const refId in footnotes) {
         latex = latex.replace('\\cite{' + refId + '}', '\\footnote{' + footnotes[refId] + '}')
     }
@@ -503,8 +503,8 @@ const generateLatexTitle = ({ title, subtitle }: { title?: string, subtitle?: st
     if (!title && subtitle) {
         return '\\title{\\textbf{' + subtitle + '}}';
     }
-    
-    return '\\title{\\textbf{Document Title}}';    
+
+    return '\\title{\\textbf{Document Title}}';
 }
 
 const gdoc2latex = (options: { inputHTML: string, outputFile?: string, templateStart?: string, templateEnd?: string }): { latex: string, bibtex?: string } => {
@@ -524,21 +524,21 @@ const gdoc2latex = (options: { inputHTML: string, outputFile?: string, templateS
     checkType(options.templateEnd, "string", 'template end option');
 
     const parsed: HimalayaElement[] = himalaya.parse(options.inputHTML.trim());
-    
+
     // @ts-ignore
     const css: string = parsed[0].children[0].children[1].children[0].content;
     // @ts-ignore
     const elems: HimalayaElement[] = parsed[0].children[1].children;
 
     const { title, subtitle, latex, bibtex } = handleElems(elems, getTextFormatSelectors(css));
-    
-    const combinedLatex = 
+
+    const combinedLatex =
         generateLatexTitle({ title, subtitle }) + '\n'
         + options.templateStart
         + '\n' + latex
         + '\n\n\\bibliography{' + options.outputFile.slice(0, -4) + '}\n\n'
         + options.templateEnd;
-        
+
     return {
         latex: combinedLatex,
         bibtex
