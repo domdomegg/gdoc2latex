@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { gdoc2latexFs } from './index';
+import gdoc2latexFs from './filesystem';
 import { program } from 'commander';
 
 const cli = (args: string[]) => {

@@ -106,13 +106,13 @@ pdflatex -shell-escape index
 
 This will result in a complete `index.pdf`
 
-### Installing manually
+### Contributing
 
 1. Install [Node.js](https://nodejs.org/en/)
 2. Clone this repository
 3. Run `npm install`
-4. Run `npm run build`
-5. Run `npm install -g`
+
+From here you can edit the code. You can run the tests with `npm test`, or check it builds with `npm run build`. To install it locally for further testing on your own files, run `npm run build` then `npm install -g`.
 
 ### Releases
 
