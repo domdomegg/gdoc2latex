@@ -1,3 +1,6 @@
+# This file is centrally managed
+# https://github.com/domdomegg/domdomegg/blob/master/file-sync/general.yaml
+
 name: CI/CD
 
 on: push
@@ -32,6 +35,8 @@ jobs:
     needs: ci
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    env:
+      CI: true
     steps:
       - name: Checkout ${{ github.sha }}
         uses: actions/checkout@v3
