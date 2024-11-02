@@ -1,6 +1,6 @@
 {
   "name": "gdoc2latex",
-  "version": "5.0.0",
+  "version": "5.0.1",
   "description": "Converts Google Docs files to Latex",
   "license": "AGPL-3.0-only",
   "author": "Adam Jones (domdomegg)",
