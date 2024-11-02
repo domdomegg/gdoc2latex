@@ -178,6 +178,14 @@ const mapToLatex = (tfs: TextFormatSelectors, addBibliographyEntry: AddEntryFn, 
         return '\\subsubsubsection{' + childrenText + '}'
     }
 
+    if (elem.tagName == 'sup') {
+        return '\\textsuperscript{' + childrenText + '}'
+    }
+
+    if (elem.tagName == 'sub') {
+        return '\\textsubscript{' + childrenText + '}'
+    }
+
     throw new Error('Unsupported tag ' + elem.tagName + ' with content:\n\t' + childrenText);
 }
 
